@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laporan Penjualan & Profit</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                        success: '#00B42A',
+                        warning: '#FF7D00',
+                        danger: '#F53F3F',
+                        dark: '#1D2129'
+                    },
+                    fontFamily: { sans: ['Inter', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 text-gray-800">
+    <div class="container mx-auto px-4 py-6 max-w-5xl">
+        <!-- Header -->
+        <div class="bg-white rounded-lg shadow p-5 mb-6">
+            <h1 class="text-2xl font-bold text-center text-primary mb-2">LAPORAN PENJUALAN & KEUNTUNGAN</h1>
+            <p class="text-center text-gray-500">CV. MAKMUR SEJAHTERA - Semarang</p>
+        </div>
+
+        <!-- Form Input Data -->
+        <div class="bg-white rounded-lg shadow p-5 mb-6">
+            <h2 class="text-lg font-semibold mb-4"><i class="fa fa-plus-circle mr-2"></i>Tambah Data Penjualan</h2>
+            <div class="grid md:grid-cols-5 gap-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1">Tanggal</label>
+                    <input type="date" id="tanggal" class="w-full border rounded px-3 py-2" value="<?= new Date().toISOString().split('T')[0] ?>">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Jenis Penjualan</label>
+                    <select id="jenis" class="w-full border rounded px-3 py-2">
+                        <option value="Offline">Offline</option>
+                        <option value="Grab">Grab</option>
+                        <option value="Shopee">Shopee</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Harga Jual (Rp)</label>
+                    <input type="number" id="hargaJual" min="0" class="w-full border rounded px-3 py-2" placeholder="0">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Harga Modal (Rp)</label>
+                    <input type="number" id="hargaModal" min="0" class="w-full border rounded px-3 py-2" placeholder="0">
+                </div>
+                <div class="flex items-end">
+                    <button id="simpanData" class="w-full bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded font-medium">
+                        <i class="fa fa-save mr-1"></i> Simpan
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter Laporan -->
+        <div class="bg-white rounded-lg shadow p-5 mb-6">
+            <h2 class="text-lg font-semibold mb-4"><i class="fa fa-filter mr-2"></i>Filter Laporan Bulanan</h2>
+            <div class="grid md:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1">Bulan</label>
+                    <select id="filterBulan" class="w-full border rounded px-3 py-2">
+                        <option value="01">Januari</option>
+                        <option value="02">Februari</option>
+                        <option value="03">Maret</option>
+                        <option value="04">April</option>
+                        <option value="05">Mei</option>
+                        <option value="06">Juni</option>
+                        <option value="07">Juli</option>
+                        <option value="08">Agustus</option>
+                        <option value="09">September</option>
+                        <option value="10">Oktober</option>
+                        <option value="11">November</option>
+                        <option value="12">Desember</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Tahun</label>
+                    <input type="number" id="filterTahun" min="2020" max="2099" class="w-full border rounded px-3 py-2" value="2026">
+                </div>
+                <div class="flex items-end gap-2">
+                    <button id="tampilkanLaporan" class="bg-success hover:bg-success/90 text-white px-4 py-2 rounded font-medium">
+                        <i class="fa fa-search mr-1"></i> Tampilkan
+                    </button>
+                    <button id="lihatProfit" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded font-medium" disabled>
+                        <i class="fa fa-line-chart mr-1"></i> Lihat Keuntungan
+                    </button>
+                </div>
+                <div class="flex items-end">
+                    <button id="unduhPDF" class="bg-danger hover:bg-danger/90 text-white px-4 py-2 rounded font-medium w-full" disabled>
+                        <i class="fa fa-file-pdf-o mr-1"></i> Unduh PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ringkasan & Tabel Laporan -->
+        <div class="bg-white rounded-lg shadow p-5">
+            <h2 class="text-lg font-semibold mb-4">Hasil Laporan</h2>
+            
+            <!-- Ringkasan -->
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+                <div class="bg-blue-50 border-l-4 border-primary p-3 rounded">
+                    <p class="text-sm text-gray-600">Total Offline</p>
+                    <p class="text-xl font-bold text-primary" id="totalOffline">Rp 0</p>
+                </div>
+                <div class="bg-green-50 border-l-4 border-success p-3 rounded">
+                    <p class="text-sm text-gray-600">Total Grab</p>
+                    <p class="text-xl font-bold text-success" id="totalGrab">Rp 0</p>
+                </div>
+                <div class="bg-orange-50 border-l-4 border-warning p-3 rounded">
+                    <p class="text-sm text-gray-600">Total Shopee</p>
+                    <p class="text-xl font-bold text-warning" id="totalShopee">Rp 0</p>
+                </div>
+                <div class="bg-gray-50 border-l-4 border-gray-600 p-3 rounded">
+                    <p class="text-sm text-gray-600">Total Modal</p>
+                    <p class="text-xl font-bold text-gray-700" id="totalModal">Rp 0</p>
+                </div>
+                <div class="bg-emerald-50 border-l-4 border-emerald-600 p-3 rounded">
+                    <p class="text-sm text-gray-600">Keuntungan Kotor</p>
+                    <p class="text-xl font-bold text-emerald-600" id="totalProfit">Rp 0</p>
+                </div>
+            </div>
+
+            <!-- Tabel Data -->
+            <div class="overflow-x-auto">
+                <table class="w-full border-collapse">
+                    <thead>
+                        <tr class="bg-gray-100 text-left">
+                            <th class="border p-3">No</th>
+                            <th class="border p-3">Tanggal</th>
+                            <th class="border p-3">Jenis</th>
+                            <th class="border p-3 text-right">Harga Jual</th>
+                            <th class="border p-3 text-right">Modal</th>
+                            <th class="border p-3 text-right">Keuntungan</th>
+                            <th class="border p-3 text-center">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelLaporan">
+                        <tr>
+                            <td colspan="7" class="border p-4 text-center text-gray-500">Belum ada data untuk periode ini</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL LAPORAN KEUNTUNGAN -->
+    <div id="modalProfit" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-lg w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="p-5 border-b flex justify-between items-center">
+                <h3 class="text-xl font-bold text-purple-700">RINCIAN KEUNTUNGAN BULANAN</h3>
+                <button onclick="tutupModal()" class="text-gray-500 hover:text-gray-700 text-xl">&times;</button>
+            </div>
+            <div class="p-5 space-y-4" id="isiModalProfit">
+                <!-- Isi akan dimasukkan lewat JavaScript -->
+            </div>
+            <div class="p-4 border-t text-right">
+                <button onclick="tutupModal()" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Format angka ke Rupiah
+        function formatRupiah(angka) {
+            return new Intl.NumberFormat('id-ID', {
+                style: 'currency',
+                currency: 'IDR',
+                minimumFractionDigits: 0
+            }).format(angka || 0);
+        }
+
+        // Ambil data dari LocalStorage
+        function ambilSemuaData() {
+            return JSON.parse(localStorage.getItem('dataPenjualan')) || [];
+        }
+
+        // Simpan data ke LocalStorage
+        function simpanData(data) {
+            localStorage.setItem('dataPenjualan', JSON.stringify(data));
+        }
+
+        // Simpan data baru
+        document.getElementById('simpanData').addEventListener('click', () => {
+            const tanggal = document.getElementById('tanggal').value;
+            const jenis = document.getElementById('jenis').value;
+            const hargaJual = parseInt(document.getElementById('hargaJual').value);
+            const hargaModal = parseInt(document.getElementById('hargaModal').value);
+
+            if (!tanggal || !hargaJual || !hargaModal || hargaJual <= 0 || hargaModal < 0) {
+                alert('Isi semua data dengan benar!');
+                return;
+            }
+            if (hargaModal > hargaJual) {
+                alert('Harga modal tidak boleh lebih besar dari harga jual!');
+                return;
+            }
+
+            const data = ambilSemuaData();
+            const keuntungan = hargaJual - hargaModal;
+            data.push({ id: Date.now(), tanggal, jenis, hargaJual, hargaModal, keuntungan });
+            simpanData(data);
+
+            alert('Data berhasil disimpan!');
+            document.getElementById('hargaJual').value = '';
+            document.getElementById('hargaModal').value = '';
+            tampilkanLaporan();
+        });
+
+        // Hapus data
+        function hapusData(id) {
+            if (confirm('Yakin ingin menghapus data ini?')) {
+                const data = ambilSemuaData().filter(item => item.id !== id);
+                simpanData(data);
+                tampilkanLaporan();
+            }
+        }
+
+        // Tampilkan laporan sesuai filter
+        function tampilkanLaporan() {
+            const bulan = document.getElementById('filterBulan').value;
+            const tahun = document.getElementById('filterTahun').value;
+            const data = ambilSemuaData();
+
+            // Filter data bulan & tahun
+            const dataFilter = data.filter(item => {
+                const tgl = new Date(item.tanggal);
+                return tgl.getMonth() + 1 == bulan && tgl.getFullYear() == tahun;
+            });
+
+            // Hitung total
+            let totalOffline = 0, totalGrab = 0, totalShopee = 0;
+            let totalModal = 0, totalKeuntungan = 0;
+
+            dataFilter.forEach(item => {
+                if (item.jenis === 'Offline') totalOffline += item.hargaJual;
+                if (item.jenis === 'Grab') totalGrab += item.hargaJual;
+                if (item.jenis === 'Shopee') totalShopee += item.hargaJual;
+                totalModal += item.hargaModal;
+                totalKeuntungan += item.keuntungan;
+            });
+            const totalPenjualan = totalOffline + totalGrab + totalShopee;
+
+            // Update ringkasan
+            document.getElementById('totalOffline').textContent = formatRupiah(totalOffline);
+            document.getElementById('totalGrab').textContent = formatRupiah(totalGrab);
+            document.getElementById('totalShopee').textContent = formatRupiah(totalShopee);
+            document.getElementById('totalModal').textContent = formatRupiah(totalModal);
+            document.getElementById('totalProfit').textContent = formatRupiah(totalKeuntungan);
+
+            // Isi tabel
+            const tbody = document.getElementById('tabelLaporan');
+            if (dataFilter.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="border p-4 text-center text-gray-500">Belum ada data untuk periode ini</td></tr>`;
+                document.getElementById('unduhPDF').disabled = true;
+                document.getElementById('lihatProfit').disabled = true;
+                return;
+            }
+
+            tbody.innerHTML = '';
+            dataFilter.sort((a,b) => new Date(a.tanggal) - new Date(b.tanggal)).forEach((item, index) => {
+                const baris = document.createElement('tr');
+                baris.className = 'hover:bg-gray-50';
+                baris.innerHTML = `
+                    <td class="border p-3">${index + 1}</td>
+                    <td class="border p-3">${new Date(item.tanggal).toLocaleDateString('id-ID')}</td>
+                    <td class="border p-3">${item.jenis}</td>
+                    <td class="border p-3 text-right">${formatRupiah(item.hargaJual)}</td>
+                    <td class="border p-3 text-right">${formatRupiah(item.hargaModal)}</td>
+                    <td class="border p-3 text-right font-medium ${item.keuntungan >= 0 ? 'text-green-600' : 'text-red-600'}">${formatRupiah(item.keuntungan)}</td>
+                    <td class="border p-3 text-center">
+                        <button onclick="hapusData(${item.id})" class="text-danger hover:text-danger/80 text-sm">
+                            <i class="fa fa-trash"></i> Hapus
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(baris);
+            });
+
+            document.getElementById('unduhPDF').disabled = false;
+            document.getElementById('lihatProfit').disabled = false;
+        }
+
+        // Buka modal rincian keuntungan
+        document.getElementById('lihatProfit').addEventListener('click', () => {
+            const bulan = document.getElementById('filterBulan').value;
+            const tahun = document.getElementById('filterTahun').value;
+            const namaBulan = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'][parseInt(bulan)-1];
+            const data = ambilSemuaData().filter(item => {
+                const tgl = new Date(item.tanggal);
+                return tgl.getMonth() + 1 == bulan && tgl.getFullYear() == tahun;
+            });
+
+            // Hitung rincian per jenis
+            const rincian = {
+                offline: { jual: 0, modal: 0, untung: 0 },
+                grab: { jual: 0, modal: 0, untung: 0 },
+                shopee: { jual: 0, modal: 0, untung: 0 }
+            };
+
+            data.forEach(item => {
+                if (item.jenis === 'Offline') {
+                    rincian.offline.jual += item.hargaJual;
+                    rincian.offline.modal += item.hargaModal;
+                    rincian.offline.untung += item.keuntungan;
+                } else if (item.jenis === 'Grab') {
+                    rincian.grab.jual += item.hargaJual;
+                    rincian.grab.modal += item.hargaModal;
+                    rincian.grab.untung += item.keuntungan;
+                } else if (item.jenis === 'Shopee') {
+                    rincian.shopee.jual += item.hargaJual;
+                    rincian.shopee.modal += item.hargaModal;
+                    rincian.shopee.untung += item.keuntungan;
+                }
+            });
+
+            const totalJual = rincian.offline.jual + rincian.grab.jual + rincian.shopee.jual;
+            const totalModal = rincian.offline.modal + rincian.grab.modal + rincian.shopee.modal;
+            const totalUntung = rincian.offline.untung + rincian.grab.untung + rincian.shopee.untung;
+            const persenUntung = totalJual > 0 ? ((totalUntung / totalJual) * 100).toFixed(2) : 0;
+
+            // Isi konten modal
+            document.getElementById('isiModalProfit').innerHTML = `
+                <p class="text-center text-lg font-medium mb-3">Periode: ${namaBulan} ${tahun}</p>
+                <div class="space-y-3">
+                    <div class="p-3 bg-blue-50 rounded">
+                        <h4 class="font-semibold text-blue-700">Penjualan Offline</h4>
+                        <p>Total Jual: ${formatRupiah(rincian.offline.jual)}</p>
+                        <p>Total Modal: ${formatRupiah(rincian.offline.modal)}</p>
+                        <p>Keuntungan: <span class="font-bold text-green-600">${formatRupiah(rincian.offline.untung)}</span></p>
+                    </div>
+                    <div class="p-3 bg-green-50 rounded">
+                        <h4 class="font-semibold text-green-700">Penjualan Grab</h4>
+                        <p>Total Jual: ${formatRupiah(rincian.grab.jual)}</p>
+                        <p>Total Modal: ${formatRupiah(rincian.grab.modal)}</p>
+                        <p>Keuntungan: <span class="font-bold text-green-600">${formatRupiah(rincian.grab.untung)}</span></p>
+                    </div>
+                    <div class="p-3 bg-orange-50 rounded">
+                        <h4 class="font-semibold text-orange-700">Penjualan Shopee</h4>
+                        <p>Total Jual: ${formatRupiah(rincian.shopee.jual)}</p>
+                        <p>Total Modal: ${formatRupiah(rincian.shopee.modal)}</p>
+                        <p>Keuntungan: <span class="font-bold text-green-600">${formatRupiah(rincian.shopee.untung)}</span></p>
+                    </div>
+                    <div class="p-4 bg-purple-100 rounded border border-purple-200 mt-4">
+                        <h4 class="font-bold text-lg text-purple-800">TOTAL KESELURUHAN</h4>
+                        <p class="text-base">Omset: ${formatRupiah(totalJual)}</p>
+                        <p class="text-base">Modal: ${formatRupiah(totalModal)}</p>
+                        <p class="text-xl font-bold text-emerald-700">Keuntungan Bersih: ${formatRupiah(totalUntung)}</p>
+                        <p class="text-sm text-gray-600">Persentase keuntungan: ${persenUntung}%</p>
+                    </div>
+                </div>
+            `;
+
+            // Tampilkan modal
+            document.getElementById('modalProfit').classList.remove('hidden');
+        });
+
+        // Tutup modal
+        function tutupModal() {
+            document.getElementById('modalProfit').classList.add('hidden');
+        }
+
+        // Unduh ke PDF
+        document.getElementById('unduhPDF').addEventListener('click', () => {
+            const bulan = document.getElementById('filterBulan').value;
+            const tahun = document.getElementById('filterTahun').value;
+            const namaBulan = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'][parseInt(bulan)-1];
+            
+            const data = ambilSemuaData().filter(item => {
+                const tgl = new Date(item.tanggal);
+                return tgl.getMonth() + 1 == bulan && tgl.getFullYear() == tahun;
+            });
+
+            const totalJual = data.reduce((s,i)=>s+i.hargaJual,0);
+            const totalModal = data.reduce((s,i)=>s+i.hargaModal,0);
+            const totalUntung = data.reduce((s,i)=>s+i.keuntungan,0);
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ format: 'a4', unit: 'mm' });
+            let y = 15;
+
+            // Kop
+            doc.setFontSize(16); doc.setFont('helvetica', 'bold');
+            doc.text('LAPORAN PENJUALAN & KEUNTUNGAN', 105, y, { align: 'center' }); y += 7;
+            doc.setFontSize(12); doc.setFont('helvetica', 'normal');
+            doc.text(`Bulan: ${namaBulan} ${tahun}`, 105, y, { align: 'center' }); y += 7;
+            doc.text('CV. MAKMUR SEJAHTERA - Semarang', 105, y, { align: 'center' }); y += 10;
+            doc.line(20, y, 190, y); y += 10;
+
+            // Ringkasan
+            doc.setFontSize(10);
+            doc.text(`Total Omset Penjualan : ${formatRupiah(totalJual)}`, 20, y); y += 6;
+            doc.text(`Total Harga Modal       : ${formatRupiah(totalModal)}`, 20, y); y += 6;
+            doc.setFont('helvetica', 'bold');
+            doc.text(`TOTAL KEUNTUNGAN        : ${formatRupiah(totalUntung)}`, 20, y); y += 12;
+
+            // Tabel data
+            const tabelData = data.map((item, i) => [
+                i+1,
+                new Date(item.tanggal).toLocaleDateString('id-ID'),
+                item.jenis,
+                formatRupiah(item.hargaJual),
+                formatRupiah(item.hargaModal),
+                formatRupiah(item.keuntungan)
+            ]);
+
+            doc.autoTable({
+                startY: y,
+                head: [['No', 'Tanggal', 'Jenis', 'Harga Jual', 'Modal', 'Keuntungan']],
+                body: tabelData,
+                theme: 'grid',
+                styles: { fontSize: 9 },
+                headStyles: { fillColor: [240,240,240], textColor: 0 }
+            });
+
+            y = doc.lastAutoTable.finalY + 15;
+            doc.text('Semarang, ' + new Date().toLocaleDateString('id-ID'), 140, y); y += 10;
+            doc.text('Pemilik Usaha', 140, y); y += 20;
+            doc.text('( ........................... )', 140, y);
+
+            doc.save(`Laporan_Keuntungan_${namaBulan}_${tahun}.pdf`);
+        });
+
+        // Jalankan saat halaman dibuka
+        const sekarang = new Date();
+        document.getElementById('filterBulan').value = sekarang.getMonth() + 1;
+        document.getElementById('filterTahun').value = sekarang.getFullYear();
+        document.getElementById('tampilkanLaporan').addEventListener('click', tampilkanLaporan);
+        tampilkanLaporan();
+    </script>
+</body>
+</html>
